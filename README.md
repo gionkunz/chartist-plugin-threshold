@@ -3,7 +3,7 @@
 This Chartist plugin can be used to divide your Line or Bar chart with a threshold. Everything above and below the 
 threshold will be tagged with a special class, in order for your to apply different styling where appropriate.
 
-![The Chartist Guy](https://raw.github.com/gionkunz/chartist-plugin-threshold/develop/ct-threshold-demo.gif "Threshold Example Screenshot")
+![Threshold Example Screenshot](https://raw.github.com/gionkunz/chartist-plugin-threshold/master/ct-threshold-demo.gif "Threshold Example Screenshot")
 
 ## Usage example
 
