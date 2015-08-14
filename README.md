@@ -42,11 +42,11 @@ Use the following CSS to style the chart parts
 }
 
 .ct-area.ct-threshold-above {
-  stroke: #f05b4f;
+  fill: #f05b4f;
 }
 
 .ct-area.ct-threshold-below {
-  stroke: #59922b;
+  fill: #59922b;
 }
 ```
 
