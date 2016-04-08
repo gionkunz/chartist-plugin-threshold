@@ -30,9 +30,9 @@ new Chartist.Line('.ct-chart', {
 });
 ```
 
-You can also set the threshold option to an array of values in order to specify a variable threshold. An additional
-"lineSmooth" setting is available to control the smoothing of the threshold line with all Chartist.Interpolation functions
-as available options.
+To specify a variable threshold, simply set the threshold option to an array of values. The 'lineSmooth' setting can 
+be used to control the curve of the threshold line. See the Chartist plugin for all possible lineSmooth options. The
+default is 'Chartist.Interpolation.none' which uses linear interpolation.
 
 ```javascript
 new Chartist.Line('.ct-chart', {
@@ -54,8 +54,8 @@ new Chartist.Line('.ct-chart', {
 });
 ```
 
-If you are using named series, you can even specify the name of an existing series to use as the threshold for other series
-in the chart.
+If you are using named series, you can specify the name of a series in the chart to act as the threshold line for 
+the other series in the chart.
 
 ```javascript
 new Chartist.Line('.ct-chart', {
