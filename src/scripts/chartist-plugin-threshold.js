@@ -21,7 +21,7 @@
     })
   };
 
-  function createMasks(chart, thresholdSeries, options) {
+  function createMasks(chart, threshold, options) {
     // Select the defs element within the chart or create a new one
     var defs = chart.svg.querySelector('defs') || chart.svg.elem('defs');
     var width = chart.svg.width();
@@ -47,10 +47,9 @@
         id: options.maskNames.belowThreshold
       });
 
-    if (thresholdSeries.data.length) {
+    if (threshold.hasData()) {
       // generate SVG path for the threshold series and append to each mask
-      var interpolator = options.lineSmooth;
-      var thresholdSvgPath = createThresholdSvgPath(chart, thresholdSeries.data, interpolator);
+      var thresholdSvgPath = threshold.generateSvgPath(chart, options.lineSmooth);
       var firstElement = thresholdSvgPath.pathElements[0];
       var lastElement = thresholdSvgPath.pathElements[thresholdSvgPath.pathElements.length - 1];
 
@@ -86,77 +85,6 @@
     return defs;
   }
 
-  // generates an SVG Path for the given threshold data and returns an instance of Chartist.Svg.Path
-  function createThresholdSvgPath(chart, thresholdData, interpolator) {
-    var pathCoordinates = [];
-    var pathData = [];
-
-    thresholdData.forEach(function(value, valueIndex) {
-      var p = {
-        x: chart.chartRect.x1 + chart.axisX.projectValue(value, valueIndex, thresholdData),
-        y: chart.chartRect.y1 - chart.axisY.projectValue(value, valueIndex, thresholdData)
-      };
-
-      pathCoordinates.push(p.x, p.y);
-      pathData.push({
-        value: value,
-        valueIndex: valueIndex,
-        meta: ''
-      });
-    });
-
-    return interpolator(pathCoordinates, pathData);
-  }
-
-  // converts threshold parameter to a data series, normalizes data, and returns threshold series
-  function normalizeThresholdData(threshold, chart) {
-    var thresholdSeries;
-
-    if (Chartist.isNum(threshold)) {
-      // if threshold is a static number, generate a series of static data points
-      var data = [];
-
-      if (chart.data.series.length) {
-        var count = chart.data.series.reduce(function(prev, curr) {
-          return Math.max(prev, (curr.data || curr).length);
-        }, 0);
-
-        data = Chartist.times(count).map(function() {
-          return threshold;
-        });
-      }
-
-      thresholdSeries = {
-        data: data,
-        name: '_threshold'
-      };
-    } else {
-      // if threshold is a string, map threshold to series data of matching series
-      if (typeof threshold === 'string') {
-        thresholdSeries = chart.data.series.reduce(function(prev, curr) {
-          return curr.name === threshold ? curr : prev;
-        }, threshold);
-      } else if (threshold.constructor === Array) {
-        thresholdSeries = {
-          data: threshold,
-          name: '_threshold'
-        };
-      }
-
-      // if threshold is not an array or valid series name, throw an exception
-      if (!(thresholdSeries instanceof Object) || !thresholdSeries.data) {
-        throw new Error('Invalid \'threshold\' value provided to chartist-plugin-threshold: ' + threshold);
-      }
-    }
-
-    var normalizedData = Chartist.normalizeData({
-      series: [thresholdSeries]
-    });
-
-    thresholdSeries.data = Chartist.getDataArray(normalizedData, chart.options.reverseData, true).shift();
-    return thresholdSeries;
-  }
-
   Chartist.plugins = Chartist.plugins || {};
   Chartist.plugins.ctThreshold = function (options) {
 
@@ -164,11 +92,11 @@
 
     return function ctThreshold(chart) {
       if (chart instanceof Chartist.Line || chart instanceof Chartist.Bar) {
-        var thresholdSeries = normalizeThresholdData(options.threshold, chart);
+        var threshold = new Threshold(chart, options.threshold);
 
         chart.on('draw', function (data) {
           // if the element represents the control series, don't apply threshold classes or masks to it
-          if (data.series && data.series.name && data.series.name === thresholdSeries.name) {
+          if (data.series && data.series.name && data.series.name === threshold.value) {
             return;
           }
 
@@ -176,9 +104,7 @@
             // For points we can just use the data value and compare against the threshold in order to determine
             // the appropriate class
 
-            // use point at given index in the threshold data as the threshold for the current point
-            var thresholdPoint = thresholdSeries.data[data.index] || {y: 0};
-            var thresholdValue = +thresholdPoint.y || 0;
+            var thresholdValue = threshold.getThresholdValue(data);
 
             data.element.addClass(
               data.value.y >= thresholdValue ? options.classNames.aboveThreshold : options.classNames.belowThreshold
@@ -206,11 +132,159 @@
 
         // On the created event, create the two mask definitions used to mask the line graphs
         chart.on('created', function (data) {
-          if (thresholdSeries.data.length) {
-            createMasks(data, thresholdSeries, options);
+          if (threshold.hasData()) {
+            createMasks(data, threshold, options);
           }
         });
       }
     };
+  };
+
+  /**
+   * Constructor for Threshold class.
+   *
+   * @param {Chartist.Base} chart Chart instance
+   * @param {Number|String|Array|Object} value Threshold option passed in to Chartist.plugins.ctThreshold
+   * @constructor
+   */
+  function Threshold(chart, value) {
+    this.chart = chart;
+    this.value = value;
+    this.normalize(value);
+  };
+
+  /**
+   * Returns the threshold value corresponding to the provided point in a data series.
+   *
+   * @memberof Threshold
+   * @param {Object} A data point from a chart series
+   * @return {Number} Threshold value at given point
+   */
+  Threshold.prototype.getThresholdValue = function(point) {
+    var thresholdPoint;
+
+    if (point.value.x !== undefined) {
+      // for mult-dimensional points, find the point at x
+      thresholdPoint = this.series.data.filter(function(tp) {
+        return tp.x === point.value.x;
+      }).pop();
+    } else if (this.series.data[point.index]) {
+      // for plain arrays, use value at the series index
+      thresholdPoint = this.series.data[point.index];
+    }
+
+    return Chartist.getMultiValue(thresholdPoint, 'y');
+  };
+
+  /**
+   * Checks if the threshold instance contains any data.
+   *
+   * @memberof Threshold
+   * @return {Boolean} True if the threshold series contains any data, false otherwise
+   */
+  Threshold.prototype.hasData = function() {
+    return this.series && this.series.data.length > 0;
+  };
+
+  /**
+   * Generates and returns an SVG Path for the threshold data.
+   *
+   * @memberof Threshold
+   * @param {Object} chartProperties An object containing properties of the chart for which the path is being drawn
+   * @param {Function} interpolator Interpolation function to use when rendering the path
+   * @return {Chartist.Svg.Path} SVG path representing the threshold data
+   */
+  Threshold.prototype.generateSvgPath = function(chartProperties, interpolator) {
+    var pathCoordinates = [];
+    var pathData = [];
+    var data = this.series.data;
+
+    data.forEach(function(value, valueIndex) {
+      var p = {
+        x: chartProperties.chartRect.x1 + chartProperties.axisX.projectValue(value, valueIndex, data),
+        y: chartProperties.chartRect.y1 - chartProperties.axisY.projectValue(value, valueIndex, data)
+      };
+
+      pathCoordinates.push(p.x, p.y);
+      pathData.push({
+        value: value,
+        valueIndex: valueIndex
+      });
+    });
+
+    return interpolator(pathCoordinates, pathData);
+  };
+
+  /**
+   * Converts threshold value to a data series and normalizes the data.
+   *
+   * @memberof Threshold
+   * @param {Number|String|Array|Object} Value of the threshold option passed in to plugin
+   * @return {Threshold} Threshold instance
+   */
+  Threshold.prototype.normalize = function(value) {
+    this.series = null;
+
+    // if threshold is a static number, generate a series of static data points
+    if (Chartist.isNum(value)) {
+      var data = [];
+
+      if (this.chart.data.series.length) {
+        var axisX = this.chart.options.axisX;
+
+        // if using multi-dimensional points, we have to generate a point for each value of x
+        if (axisX.type && axisX.type.prototype.constructor.name != 'StepAxis') {
+          var points = {};
+
+          this.chart.data.series.forEach(function(series) {
+            (series.data || series).forEach(function(point) {
+              points[point.x] = true;
+            });
+          });
+
+          data = Object.keys(points).map(function(x) {
+            return {x: +x, y: value};
+          });
+        } else {
+          var count = this.chart.data.series.reduce(function(prev, curr) {
+            return Math.max(prev, (curr.data || curr).length);
+          }, 0);
+
+          data = Chartist.times(count).map(function() {
+            return value;
+          });
+        }
+      }
+
+      this.series = {
+        data: data,
+        name: '_threshold'
+      };
+    } else {
+      // if threshold is a string, map threshold to series data of matching name
+      if (typeof value === 'string') {
+        this.series = this.chart.data.series.reduce(function(prev, curr) {
+          return curr.name === value ? curr : prev;
+        }, value);
+      } else if (value.constructor === Array) {
+        this.series = {
+          data: value,
+          name: '_threshold'
+        };
+      }
+
+      // if threshold is not an array or valid series name, throw an exception
+      if (!(this.series instanceof Object) || !this.series.data) {
+        throw new Error('Invalid \'threshold\' value provided to chartist-plugin-threshold: ' + value);
+      }
+    }
+
+    var normalizedData = Chartist.normalizeData({
+      series: [this.series]
+    });
+
+    this.series.data = Chartist.getDataArray(normalizedData, this.chart.options.reverseData, true).shift();
+
+    return this;
   };
 }(window, document, Chartist));
