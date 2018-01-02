@@ -31,7 +31,8 @@
       maskNames: {
         aboveThreshold: 'ct-threshold-mask-above',
         belowThreshold: 'ct-threshold-mask-below'
-      }
+      },
+      basePath: ''
     };
 
     function createMasks(data, options) {
@@ -100,7 +101,7 @@
                 .parent()
                 .elem(data.element._node.cloneNode(true))
                 .attr({
-                  mask: 'url(#' + options.maskNames.aboveThreshold + ')'
+                  mask: 'url(' + options.basePath + '#' + options.maskNames.aboveThreshold + ')'
                 })
                 .addClass(options.classNames.aboveThreshold);
 
@@ -108,7 +109,7 @@
               // for blow threshold
               data.element
                 .attr({
-                  mask: 'url(#' + options.maskNames.belowThreshold + ')'
+                  mask: 'url(' + options.basePath + '#' + options.maskNames.belowThreshold + ')'
                 })
                 .addClass(options.classNames.belowThreshold);
             }

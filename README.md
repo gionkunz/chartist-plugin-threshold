@@ -77,6 +77,12 @@ var defaultOptions = {
   maskNames: {
     aboveThreshold: 'ct-threshold-mask-above',
     belowThreshold: 'ct-threshold-mask-below'
-  }
+  },
+  basePath: ""
 };
 ```
+
+## Fix for Safari with `<base href="/" />`
+
+In Safari if `<base href="/" />` is set, the clip mask won't work. To fix this
+set the `basePath` in options to the absolute path.
