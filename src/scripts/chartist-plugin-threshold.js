@@ -104,5 +104,5 @@
         });
       }
     };
-  }
+  };
 }(window, document, Chartist));
