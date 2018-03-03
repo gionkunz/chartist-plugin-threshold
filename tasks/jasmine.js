@@ -9,16 +9,17 @@
 
 'use strict';
 
-module.exports = function (grunt) {
+module.exports = function () {
   return {
     dist: {
       src: [
-        'bower_components/chartist/dist/chartist.js',
-        '<%= pkg.config.src %>/scripts/chartist-plugin-threshold.js'
+        // ugly just to make this work
+        'node_modules/chartist/dist/chartist.js',
+        '<%= pkg.config.dist %>/chartist-plugin-threshold.js'
       ],
       options: {
-        specs: '<%= pkg.config.test %>/spec/**/spec-*.js',
-        helpers: '<%= pkg.config.test %>/spec/**/helper-*.js',
+        specs: '<%= pkg.config.test %>/spec/spec-*.js',
+        // helpers: '<%= pkg.config.test %>/spec/helper-*.js',
         phantomjs: {
           'ignore-ssl-errors': true
         }

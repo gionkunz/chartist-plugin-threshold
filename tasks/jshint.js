@@ -9,10 +9,10 @@
 
 'use strict';
 
-module.exports = function (grunt) {
+module.exports = function () {
   return {
     options: {
-      jshintrc: '.jshintrc',
+      jshintrc: '<%= pkg.config.test %>/.jshintrc',
       reporter: require('jshint-stylish')
     },
     all: [
