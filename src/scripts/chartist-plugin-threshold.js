@@ -33,7 +33,8 @@
         y: 0,
         width: width,
         height: height,
-        id: options.maskNames.aboveThreshold
+        id: options.maskNames.aboveThreshold,
+        maskUnits: 'userSpaceOnUse'
       })
       .elem('rect', {
         x: 0,
@@ -50,7 +51,8 @@
         y: 0,
         width: width,
         height: height,
-        id: options.maskNames.belowThreshold
+        id: options.maskNames.belowThreshold,
+        maskUnits: 'userSpaceOnUse'
       })
       .elem('rect', {
         x: 0,
