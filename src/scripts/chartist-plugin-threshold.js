@@ -33,7 +33,8 @@
         y: 0,
         width: width,
         height: height,
-        id: options.maskNames.aboveThreshold
+        maskUnits: 'userSpaceOnUse',
+        id: options.maskNames.aboveThresholdID
       })
       .elem('rect', {
         x: 0,
@@ -50,7 +51,8 @@
         y: 0,
         width: width,
         height: height,
-        id: options.maskNames.belowThreshold
+        maskUnits: 'userSpaceOnUse',
+        id: options.maskNames.belowThresholdID
       })
       .elem('rect', {
         x: 0,
@@ -68,6 +70,10 @@
 
     options = Chartist.extend({}, defaultOptions, options);
 
+    // Ensure mask names are unique
+    options.maskNames.aboveThresholdID = options.maskNames.aboveThreshold + '-' + Math.random().toString(36).substr(2, 9)
+    options.maskNames.belowThresholdID = options.maskNames.belowThreshold + '-' + Math.random().toString(36).substr(2, 9)
+
     return function ctThreshold(chart) {
       if (chart instanceof Chartist.Line || chart instanceof Chartist.Bar) {
         chart.on('draw', function (data) {
@@ -84,7 +90,7 @@
               .parent()
               .elem(data.element._node.cloneNode(true))
               .attr({
-                mask: 'url(#' + options.maskNames.aboveThreshold + ')'
+                mask: 'url(#' + options.maskNames.aboveThresholdID + ')'
               })
               .addClass(options.classNames.aboveThreshold);
 
@@ -92,7 +98,7 @@
             // for blow threshold
             data.element
               .attr({
-                mask: 'url(#' + options.maskNames.belowThreshold + ')'
+                mask: 'url(#' + options.maskNames.belowThresholdID + ')'
               })
               .addClass(options.classNames.belowThreshold);
           }
