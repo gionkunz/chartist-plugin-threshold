@@ -1,5 +1,5 @@
 /**
- * Chartist.js plugin to display a data label on top of the points in a line chart.
+ * Chartist.js plugin to divide your Line or Bar chart with a threshold.
  *
  */
 /* global Chartist */
@@ -21,10 +21,54 @@
   function createMasks(data, options) {
     // Select the defs element within the chart or create a new one
     var defs = data.svg.querySelector('defs') || data.svg.elem('defs');
-    // Project the threshold value on the chart Y axis
-    var projectedThreshold = data.chartRect.height() - data.axisY.projectValue(options.threshold) + data.chartRect.y2;
     var width = data.svg.width();
     var height = data.svg.height();
+    var projectedThreshold, aboveRect, belowRect;
+
+    if (!data.options.horizontalBars) {
+      // Project the threshold value on the chart Y axis
+      projectedThreshold =
+        data.chartRect.height() -
+        data.axisY.projectValue(options.threshold) +
+        data.chartRect.y2;
+
+      aboveRect = {
+        x: 0,
+        y: 0,
+        width: width,
+        height: projectedThreshold,
+        fill: 'white'
+      };
+
+      belowRect = {
+        x: 0,
+        y: projectedThreshold,
+        width: width,
+        height: height - projectedThreshold,
+        fill: 'white'
+      };
+    } else {
+      // Project the threshold value on the chart X axis
+      projectedThreshold =
+        data.axisX.projectValue(options.threshold) +
+        data.chartRect.x1;
+
+      aboveRect = {
+        x: projectedThreshold,
+        y: 0,
+        width: width - projectedThreshold,
+        height: height,
+        fill: 'white'
+      };
+
+      belowRect = {
+        x: 0,
+        y: 0,
+        width: projectedThreshold,
+        height: height,
+        fill: 'white'
+      };
+    }
 
     // Create mask for upper part above threshold
     defs
@@ -33,15 +77,10 @@
         y: 0,
         width: width,
         height: height,
+        maskUnits: 'userSpaceOnUse',
         id: options.maskNames.aboveThreshold
       })
-      .elem('rect', {
-        x: 0,
-        y: 0,
-        width: width,
-        height: projectedThreshold,
-        fill: 'white'
-      });
+      .elem('rect', aboveRect);
 
     // Create mask for lower part below threshold
     defs
@@ -50,15 +89,10 @@
         y: 0,
         width: width,
         height: height,
+        maskUnits: 'userSpaceOnUse',
         id: options.maskNames.belowThreshold
       })
-      .elem('rect', {
-        x: 0,
-        y: projectedThreshold,
-        width: width,
-        height: height - projectedThreshold,
-        fill: 'white'
-      });
+      .elem('rect', belowRect);
 
     return defs;
   }
@@ -75,9 +109,15 @@
             // For points we can just use the data value and compare against the threshold in order to determine
             // the appropriate class
             data.element.addClass(
-              data.value.y >= options.threshold ? options.classNames.aboveThreshold : options.classNames.belowThreshold
+              data.value.y >= options.threshold
+                ? options.classNames.aboveThreshold
+                : options.classNames.belowThreshold
             );
-          } else if (data.type === 'line' || data.type === 'bar' || data.type === 'area') {
+          } else if (
+            data.type === 'line' ||
+            data.type === 'bar' ||
+            data.type === 'area'
+          ) {
             // Cloning the original line path, mask it with the upper mask rect above the threshold and add the
             // class for above threshold
             data.element
